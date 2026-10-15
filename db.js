@@ -2,6 +2,18 @@
    localStorage-backed, no backend. WhatsApp via wa.me deep links. */
 "use strict";
 
+function _lang() {
+  try { return localStorage.getItem("tct_lang") || "zh"; } catch { return "zh"; }
+}
+function _en() { return _lang() === "en"; }
+const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const METHOD_EN = { "現金": "Cash", "銀行轉賬": "Bank transfer", "其他": "Other" };
+const EN_REMINDER =
+  "Hello {parent}, this is a fee reminder from {centre}: " +
+  "{student}'s {course} fee for {month} (HK${amount}) is still unpaid. " +
+  "Please pay by FPS to {fps_id} ({fps_name}). Thank you!";
+
 const FEE_METHODS = ["FPS", "現金", "銀行轉賬", "PayMe", "其他"];
 
 const DEFAULT_SETTINGS = {
@@ -44,13 +56,19 @@ const TDB = {
   monthLabel(m) {
     const parts = String(m || "").split("-");
     if (parts.length !== 2) return String(m || "");
-    return parts[0] + "年" + parseInt(parts[1], 10) + "月";
+    return _en()
+      ? MONTHS_EN[parseInt(parts[1], 10) - 1] + " " + parts[0]
+      : parts[0] + "年" + parseInt(parts[1], 10) + "月";
   },
 
   // ---- Settings ------------------------------------------------------------
   settings() {
     const stored = this._read("tct_settings", {});
-    return { ...DEFAULT_SETTINGS, ...stored };
+    const merged = { ...DEFAULT_SETTINGS, ...stored };
+    if (!("fee_reminder_message" in stored) && _en()) {
+      merged.fee_reminder_message = EN_REMINDER;
+    }
+    return merged;
   },
   saveSettings(data) {
     const stored = this._read("tct_settings", {});
@@ -275,6 +293,19 @@ const TDB = {
   receiptText(feeId) {
     const r = this.receiptData(feeId);
     if (!r) return "";
+    if (_en()) {
+      return [
+        (r.centre || "Tuition Receipt"),
+        "Receipt No.: " + r.no,
+        "Date: " + r.date,
+        "Student: " + r.student,
+        "Course: " + r.course,
+        "Item: " + r.month + " tuition fee",
+        "Amount: HK$" + r.amount,
+        "Payment method: " + (METHOD_EN[r.method] || r.method),
+        "Thank you!",
+      ].join("\n");
+    }
     return [
       (r.centre || "學費收據"),
       "收據編號：" + r.no,
@@ -382,7 +413,7 @@ const TDB = {
         const sess = sessions[String(m.session_id)];
         if (!sess) return null;
         const c = this.getCourse(sess.course_id);
-        return { date: sess.date, course: c ? c.name : "（已刪除課程）",
+        return { date: sess.date, course: c ? c.name : (_en() ? "(deleted course)" : "（已刪除課程）"),
           mark: m.mark };
       })
       .filter(Boolean)
