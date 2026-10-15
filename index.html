@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>補習社收費及點名</title>
+<title data-i18n="title">補習社收費及點名</title>
 <link rel="stylesheet" href="style.css">
 <style>
   .tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -20,6 +20,11 @@
     white-space: pre-line; font-size: 1rem; line-height: 1.7; }
   .check-line { display: block; margin: 0.3rem 0; }
   .check-line label { display: inline-block; margin-right: 0.6rem; }
+  .lang-switch { display: flex; gap: 0.3rem; margin-left: 0.8rem; }
+  .lang-switch button { border: 1px solid #6b5138; background: transparent;
+    color: #d8d2c4; border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; }
+  .lang-switch button.active { background: #3a322a; color: #fff;
+    border-color: transparent; }
   @media print {
     body * { visibility: hidden !important; }
     #receipt-sheet, #receipt-sheet * { visibility: visible !important; }
@@ -31,36 +36,40 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">📚 收費及點名</div>
+  <div class="brand" data-i18n="brand">📚 收費及點名</div>
   <nav class="tabs">
-    <button data-tab="dashboard" class="active">主頁</button>
-    <button data-tab="fees">學費</button>
-    <button data-tab="attendance">點名</button>
-    <button data-tab="students">學生</button>
-    <button data-tab="courses">課程</button>
-    <button data-tab="settings">設定</button>
+    <button data-tab="dashboard" class="active" data-i18n="tab_dashboard">主頁</button>
+    <button data-tab="fees" data-i18n="tab_fees">學費</button>
+    <button data-tab="attendance" data-i18n="tab_attendance">點名</button>
+    <button data-tab="students" data-i18n="tab_students">學生</button>
+    <button data-tab="courses" data-i18n="tab_courses">課程</button>
+    <button data-tab="settings" data-i18n="tab_settings">設定</button>
   </nav>
+  <div class="lang-switch">
+    <button type="button" data-lang-btn="zh">繁中</button>
+    <button type="button" data-lang-btn="en">EN</button>
+  </div>
 </header>
 <main class="container">
 
   <!-- Dashboard -->
   <section id="view-dashboard" class="view active">
-    <h1>主頁 <span class="muted" id="dash-month"></span></h1>
+    <h1><span data-i18n="dash_title">主頁</span> <span class="muted" id="dash-month"></span></h1>
     <section class="cards">
       <div class="card"><div class="card-num" id="d-students">0</div>
-        <div class="card-label">學生人數</div></div>
+        <div class="card-label" data-i18n="card_students">學生人數</div></div>
       <div class="card"><div class="card-num" id="d-collected">0</div>
-        <div class="card-label">本月已收 (HKD)</div></div>
+        <div class="card-label" data-i18n="card_collected">本月已收 (HKD)</div></div>
       <div class="card"><div class="card-num" id="d-unpaid-n">0</div>
-        <div class="card-label">未繳人數</div></div>
+        <div class="card-label" data-i18n="card_unpaid_n">未繳人數</div></div>
       <div class="card"><div class="card-num" id="d-unpaid-sum">0</div>
-        <div class="card-label">未繳總額 (HKD)</div></div>
+        <div class="card-label" data-i18n="card_unpaid_sum">未繳總額 (HKD)</div></div>
     </section>
     <section>
-      <h2>⚠️ 本月未繳學費</h2>
+      <h2 data-i18n="dash_unpaid_title">⚠️ 本月未繳學費</h2>
       <table class="tbl">
         <thead><tr>
-          <th>學生</th><th>課程</th><th>金額</th><th></th>
+          <th data-i18n="th_student">學生</th><th data-i18n="th_course">課程</th><th data-i18n="th_amount">金額</th><th></th>
         </tr></thead>
         <tbody id="dash-unpaid"></tbody>
       </table>
@@ -69,23 +78,23 @@
 
   <!-- Fees -->
   <section id="view-fees" class="view">
-    <h1>學費記錄</h1>
+    <h1 data-i18n="fees_title">學費記錄</h1>
     <div class="toolbar">
       <div class="search">
         <input type="month" id="fee-month">
-        <input type="text" id="fee-q" placeholder="搜尋學生…">
+        <input type="text" id="fee-q" placeholder="搜尋學生…" data-i18n-ph="ph_search_student">
         <select id="fee-status">
-          <option value="">全部</option>
-          <option value="unpaid">未繳</option>
-          <option value="paid">已繳</option>
+          <option value="" data-i18n="opt_all">全部</option>
+          <option value="unpaid" data-i18n="opt_unpaid">未繳</option>
+          <option value="paid" data-i18n="opt_paid">已繳</option>
         </select>
-        <button id="fee-apply">查詢</button>
+        <button id="fee-apply" data-i18n="btn_query">查詢</button>
       </div>
     </div>
     <table class="tbl">
       <thead><tr>
-        <th>學生</th><th>課程</th><th>月份</th>
-        <th>金額</th><th>狀態</th><th></th>
+        <th data-i18n="th_student">學生</th><th data-i18n="th_course">課程</th><th data-i18n="th_month">月份</th>
+        <th data-i18n="th_amount">金額</th><th data-i18n="th_status">狀態</th><th></th>
       </tr></thead>
       <tbody id="fee-rows"></tbody>
     </table>
@@ -93,18 +102,18 @@
 
   <!-- Attendance -->
   <section id="view-attendance" class="view">
-    <h1>點名</h1>
+    <h1 data-i18n="att_title">點名</h1>
     <div class="toolbar">
       <div class="search">
         <select id="att-course"></select>
         <input type="date" id="att-date">
-        <button id="att-load">載入名單</button>
+        <button id="att-load" data-i18n="btn_load_roster">載入名單</button>
       </div>
     </div>
-    <p class="muted" id="att-hint">選擇課程及日期，按學生逐一點名（即時儲存）。</p>
+    <p class="muted" id="att-hint" data-i18n="att_hint_static">選擇課程及日期，按學生逐一點名（即時儲存）。</p>
     <table class="tbl">
       <thead><tr>
-        <th>學生</th><th>家長</th><th>狀態</th><th></th>
+        <th data-i18n="th_student">學生</th><th data-i18n="th_parent">家長</th><th data-i18n="th_status">狀態</th><th></th>
       </tr></thead>
       <tbody id="att-rows"></tbody>
     </table>
@@ -112,13 +121,13 @@
 
   <!-- Students -->
   <section id="view-students" class="view">
-    <h1>學生</h1>
+    <h1 data-i18n="students_title">學生</h1>
     <div class="toolbar">
-      <button id="btn-new-student" class="primary">+ 新增學生</button>
+      <button id="btn-new-student" class="primary" data-i18n="btn_new_student">+ 新增學生</button>
     </div>
     <table class="tbl">
       <thead><tr>
-        <th>學生</th><th>家長 / 電話</th><th>報讀課程</th><th></th>
+        <th data-i18n="th_student">學生</th><th data-i18n="th_parent_phone">家長 / 電話</th><th data-i18n="th_enrolled">報讀課程</th><th></th>
       </tr></thead>
       <tbody id="student-rows"></tbody>
     </table>
@@ -126,13 +135,13 @@
 
   <!-- Courses -->
   <section id="view-courses" class="view">
-    <h1>課程</h1>
+    <h1 data-i18n="courses_title">課程</h1>
     <div class="toolbar">
-      <button id="btn-new-course" class="primary">+ 新增課程</button>
+      <button id="btn-new-course" class="primary" data-i18n="btn_new_course">+ 新增課程</button>
     </div>
     <table class="tbl">
       <thead><tr>
-        <th>課程</th><th>月費</th><th>上課時間</th><th></th>
+        <th data-i18n="th_course">課程</th><th data-i18n="th_monthly_fee">月費</th><th data-i18n="th_schedule">上課時間</th><th></th>
       </tr></thead>
       <tbody id="course-rows"></tbody>
     </table>
@@ -140,21 +149,21 @@
 
   <!-- Settings -->
   <section id="view-settings" class="view">
-    <h1>中心設定</h1>
-    <p class="muted">FPS 資料會自動加入 WhatsApp 訊息。</p>
+    <h1 data-i18n="settings_title">中心設定</h1>
+    <p class="muted" data-i18n="settings_note">FPS 資料會自動加入 WhatsApp 訊息。</p>
     <form id="frm-settings">
-      <label>中心名稱 <input name="centre_name" id="s-centre"></label>
-      <label>FPS ID（電話 / 電郵 / 轉數快代號）
-        <input name="fps_id" id="s-fps-id" placeholder="例如 91234567"></label>
-      <label>FPS 戶口名稱 <input name="fps_name" id="s-fps-name"
-             placeholder="例如 Chan Tai Man"></label>
-      <label>中心電話 <input name="phone" id="s-phone"></label>
-      <label>學費提醒訊息
+      <label><span data-i18n="lbl_centre_name">中心名稱</span> <input name="centre_name" id="s-centre"></label>
+      <label><span data-i18n="lbl_fps_id">FPS ID（電話 / 電郵 / 轉數快代號）</span>
+        <input name="fps_id" id="s-fps-id" placeholder="例如 91234567" data-i18n-ph="ph_example_phone"></label>
+      <label><span data-i18n="lbl_fps_name">FPS 戶口名稱</span> <input name="fps_name" id="s-fps-name"
+             placeholder="例如 Chan Tai Man" data-i18n-ph="ph_fps_name"></label>
+      <label><span data-i18n="lbl_phone">中心電話</span> <input name="phone" id="s-phone"></label>
+      <label><span data-i18n="lbl_reminder_msg">學費提醒訊息</span>
         <textarea name="fee_reminder_message" id="s-msg" rows="4"></textarea>
-        <div class="muted">可用：{parent} {student} {course} {month}
+        <div class="muted"><span data-i18n="reminder_vars">可用：</span>{parent} {student} {course} {month}
           {amount} {centre} {fps_id} {fps_name} {phone}</div>
       </label>
-      <button type="submit" class="primary">儲存設定</button>
+      <button type="submit" class="primary" data-i18n="btn_save_settings">儲存設定</button>
       <span id="settings-saved" class="muted"></span>
     </form>
   </section>
@@ -164,15 +173,15 @@
 <!-- Course dialog -->
 <dialog id="dlg-course">
   <form method="dialog" id="frm-course">
-    <h2 id="dlg-course-title">新增課程</h2>
-    <label>課程名稱 <input name="name" id="c-name" required></label>
-    <label>月費 (HKD) <input name="monthly_fee" id="c-fee" type="number"
+    <h2 id="dlg-course-title" data-i18n="dlg_course_new">新增課程</h2>
+    <label><span data-i18n="lbl_course_name">課程名稱</span> <input name="name" id="c-name" required></label>
+    <label><span data-i18n="lbl_course_fee">月費 (HKD)</span> <input name="monthly_fee" id="c-fee" type="number"
       step="1" min="0"></label>
-    <label>上課時間 <input name="schedule_note" id="c-sched"
-      placeholder="例如 逢星期六 10:00"></label>
+    <label><span data-i18n="lbl_course_sched">上課時間</span> <input name="schedule_note" id="c-sched"
+      placeholder="例如 逢星期六 10:00" data-i18n-ph="ph_sched"></label>
     <div class="dlg-actions">
-      <button value="cancel" formnovalidate>取消</button>
-      <button id="c-save" value="default" class="primary">儲存</button>
+      <button value="cancel" formnovalidate data-i18n="btn_cancel">取消</button>
+      <button id="c-save" value="default" class="primary" data-i18n="btn_save">儲存</button>
     </div>
   </form>
 </dialog>
@@ -180,16 +189,16 @@
 <!-- Student dialog -->
 <dialog id="dlg-student">
   <form method="dialog" id="frm-student">
-    <h2 id="dlg-student-title">新增學生</h2>
-    <label>學生姓名 <input name="name" id="st-name" required></label>
-    <label>家長姓名 <input name="parent_name" id="st-parent"></label>
-    <label>電話 / WhatsApp <input name="phone" id="st-phone"
-      placeholder="例如 91234567"></label>
-    <div>報讀課程：</div>
+    <h2 id="dlg-student-title" data-i18n="dlg_student_new">新增學生</h2>
+    <label><span data-i18n="lbl_student_name">學生姓名</span> <input name="name" id="st-name" required></label>
+    <label><span data-i18n="lbl_parent_name">家長姓名</span> <input name="parent_name" id="st-parent"></label>
+    <label><span data-i18n="lbl_student_phone">電話 / WhatsApp</span> <input name="phone" id="st-phone"
+      placeholder="例如 91234567" data-i18n-ph="ph_phone"></label>
+    <div data-i18n="lbl_enrolled_courses">報讀課程：</div>
     <div id="st-courses"></div>
     <div class="dlg-actions">
-      <button value="cancel" formnovalidate>取消</button>
-      <button id="st-save" value="default" class="primary">儲存</button>
+      <button value="cancel" formnovalidate data-i18n="btn_cancel">取消</button>
+      <button id="st-save" value="default" class="primary" data-i18n="btn_save">儲存</button>
     </div>
   </form>
 </dialog>
@@ -197,48 +206,49 @@
 <!-- Mark paid dialog -->
 <dialog id="dlg-paid">
   <form method="dialog" id="frm-paid">
-    <h2>標為已繳</h2>
+    <h2 data-i18n="dlg_paid_title">標為已繳</h2>
     <input type="hidden" id="p-feeid">
     <div class="muted" id="p-desc"></div>
-    <label>繳費日期 <input type="date" id="p-date"></label>
-    <label>付款方式
+    <label><span data-i18n="lbl_paid_date">繳費日期</span> <input type="date" id="p-date"></label>
+    <label><span data-i18n="lbl_paid_method">付款方式</span>
       <select id="p-method"></select>
     </label>
     <div class="dlg-actions">
-      <button value="cancel" formnovalidate>取消</button>
-      <button id="p-save" value="default" class="primary">確認</button>
+      <button value="cancel" formnovalidate data-i18n="btn_cancel">取消</button>
+      <button id="p-save" value="default" class="primary" data-i18n="btn_confirm">確認</button>
     </div>
   </form>
 </dialog>
 
 <!-- Receipt dialog -->
 <dialog id="dlg-receipt">
-  <h2>收據</h2>
+  <h2 data-i18n="dlg_receipt_title">收據</h2>
   <div id="receipt-sheet"></div>
   <div class="dlg-actions">
-    <button id="r-close">關閉</button>
-    <button id="r-copy">複製文字</button>
-    <button id="r-print">列印</button>
+    <button id="r-close" data-i18n="btn_close">關閉</button>
+    <button id="r-copy" data-i18n="btn_copy">複製文字</button>
+    <button id="r-print" data-i18n="btn_print">列印</button>
     <a id="r-wa" href="#" target="_blank" rel="noopener">
-      <button type="button" class="primary">WhatsApp 傳送</button>
+      <button type="button" class="primary" data-i18n="btn_wa_send">WhatsApp 傳送</button>
     </a>
   </div>
 </dialog>
 
 <!-- Attendance history dialog -->
 <dialog id="dlg-history">
-  <h2 id="h-title">出席記錄</h2>
+  <h2 id="h-title" data-i18n="dlg_history_title">出席記錄</h2>
   <p class="muted" id="h-summary"></p>
   <table class="tbl">
-    <thead><tr><th>日期</th><th>課程</th><th>狀態</th></tr></thead>
+    <thead><tr><th data-i18n="th_date">日期</th><th data-i18n="th_course">課程</th><th data-i18n="th_status">狀態</th></tr></thead>
     <tbody id="h-rows"></tbody>
   </table>
   <div class="dlg-actions">
-    <button id="h-close">關閉</button>
+    <button id="h-close" data-i18n="btn_close">關閉</button>
   </div>
 </dialog>
 
 <script src="db.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
