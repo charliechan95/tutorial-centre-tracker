@@ -17,13 +17,24 @@ document.querySelectorAll("[data-tab]").forEach((btn) => {
   });
 });
 
-const FEE_PILL = { unpaid: "未繳", paid: "已繳" };
+function feePill(status) {
+  return status === "paid" ? t("opt_paid") : t("opt_unpaid");
+}
+
+const METHOD_LABEL_KEY = {
+  "FPS": "method_fps", "現金": "method_cash", "銀行轉賬": "method_bank",
+  "PayMe": "method_payme", "其他": "method_other",
+};
+function methodLabel(m) {
+  const k = METHOD_LABEL_KEY[m];
+  return k ? t(k) : (m || "");
+}
 
 function studentName(s) {
-  return s ? s.name : "（已刪除學生）";
+  return s ? s.name : t("deleted_student");
 }
 function courseName(c) {
-  return c ? c.name : "（已刪除課程）";
+  return c ? c.name : t("deleted_course");
 }
 
 /* ---- Dashboard ----------------------------------------------------------- */
@@ -52,13 +63,13 @@ function renderDashboard() {
         <td>HK$${Math.round(f.amount)}</td>
         <td><div class="row-actions">
           ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">
-            <button type="button">📩 提醒</button></a>`
-            : `<span class="muted">欠電話號碼</span>`}
-          <button data-paid="${f.id}">✓ 已繳</button>
+            <button type="button">${t("btn_remind")}</button></a>`
+            : `<span class="muted">${t("no_phone")}</span>`}
+          <button data-paid="${f.id}">${t("btn_paid_check")}</button>
         </div></td>
       </tr>`;
       }).join("")
-    : `<tr><td colspan="4" class="muted">本月全部已繳清。</td></tr>`;
+    : `<tr><td colspan="4" class="muted">${t("all_paid")}</td></tr>`;
 }
 
 /* ---- Fees ------------------------------------------------------------------ */
@@ -69,12 +80,12 @@ function feeRow(f) {
   const c = TDB.getCourse(f.course_id);
   const link = TDB.feeReminderLink(f.id);
   const actions = f.status === "paid"
-    ? `<button data-receipt="${f.id}">🧾 收據</button>
-       <button data-unpaid="${f.id}">設為未繳</button>`
+    ? `<button data-receipt="${f.id}">${t("btn_receipt")}</button>
+       <button data-unpaid="${f.id}">${t("btn_set_unpaid")}</button>`
     : `${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">
-         <button type="button">📩 WhatsApp 提醒</button></a>`
-         : `<span class="muted">欠電話號碼</span>`}
-       <button data-paid="${f.id}">✓ 標為已繳</button>`;
+         <button type="button">${t("btn_wa_remind")}</button></a>`
+         : `<span class="muted">${t("no_phone")}</span>`}
+       <button data-paid="${f.id}">${t("btn_mark_paid")}</button>`;
   return `
     <tr>
       <td><strong>${esc(studentName(s))}</strong>
@@ -83,7 +94,7 @@ function feeRow(f) {
       <td>${esc(TDB.monthLabel(f.month))}</td>
       <td>HK$${Math.round(f.amount)}</td>
       <td><span class="pill pill-${f.status}">${FEE_PILL[f.status] || f.status}</span>
-        ${f.status === "paid" && f.method ? `<div class="muted">${esc(f.method)} ${esc(f.paid_date || "")}</div>` : ""}</td>
+        ${f.status === "paid" && f.method ? `<div class="muted">${esc(methodLabel(f.method))} ${esc(f.paid_date || "")}</div>` : ""}</td>
       <td><div class="row-actions">${actions}</div></td>
     </tr>`;
 }
@@ -100,7 +111,7 @@ function renderFees() {
   });
   document.getElementById("fee-rows").innerHTML = list.length
     ? list.map(feeRow).join("")
-    : `<tr><td colspan="6" class="muted">沒有記錄。</td></tr>`;
+    : `<tr><td colspan="6" class="muted">${t("no_records")}</td></tr>`;
 }
 
 document.getElementById("fee-apply").addEventListener("click", () => {
@@ -122,15 +133,15 @@ function renderStudents() {
           <td>${esc(s.parent_name || "—")}
             <div class="muted">${esc(s.phone || "")}</div></td>
           <td>${(s.course_ids || []).map((id) =>
-            esc(courses[String(id)] ? courses[String(id)].name : "（已刪除）"))
-            .join("、") || "<span class=\"muted\">未報讀</span>"}</td>
+            esc(courses[String(id)] ? courses[String(id)].name : t("deleted_short")))
+            .join(LANG === "en" ? ", " : "、") || "<span class=\"muted\">" + t("not_enrolled") + "</span>"}</td>
           <td><div class="row-actions">
-            <button data-edit-student="${s.id}">編輯</button>
-            <button data-history="${s.id}">出席記錄</button>
-            <button data-del-student="${s.id}">刪除</button>
+            <button data-edit-student="${s.id}">${t("btn_edit")}</button>
+            <button data-history="${s.id}">${t("btn_history")}</button>
+            <button data-del-student="${s.id}">${t("btn_delete")}</button>
           </div></td>
         </tr>`).join("")
-      : `<tr><td colspan="4" class="muted">未有學生。</td></tr>`;
+      : `<tr><td colspan="4" class="muted">${t("no_students")}</td></tr>`;
 }
 
 const dlgStudent = document.getElementById("dlg-student");
@@ -139,7 +150,7 @@ let editingStudent = null;
 function openStudentDialog(s) {
   editingStudent = s ? s.id : null;
   document.getElementById("dlg-student-title").textContent =
-    s ? "編輯學生" : "新增學生";
+    s ? t("dlg_student_edit") : t("dlg_student_new");
   document.getElementById("st-name").value = s ? s.name : "";
   document.getElementById("st-parent").value = s ? (s.parent_name || "") : "";
   document.getElementById("st-phone").value = s ? (s.phone || "") : "";
@@ -147,8 +158,8 @@ function openStudentDialog(s) {
     ? TDB.courses().map((c) => `
       <label class="check-line"><input type="checkbox" name="course_ids"
         value="${c.id}" ${s && (s.course_ids || []).map(String).includes(String(c.id)) ? "checked" : ""}>
-        ${esc(c.name)} (HK$${Math.round(c.monthly_fee)}/月)</label>`).join("")
-    : `<span class="muted">請先新增課程。</span>`;
+        ${esc(c.name)} (HK$${Math.round(c.monthly_fee)}${t("per_month")})</label>`).join("")
+    : `<span class="muted">${t("add_course_first")}</span>`;
   dlgStudent.showModal();
 }
 
@@ -170,7 +181,7 @@ document.getElementById("frm-student").addEventListener("submit", (e) => {
     course_ids: courseIds,
   };
   if (!data.name) {
-    alert("請輸入學生姓名。");
+    alert(t("alert_student_name"));
     return;
   }
   if (editingStudent) TDB.updateStudent(editingStudent, data);
@@ -190,11 +201,11 @@ function renderCourses() {
           <td>HK$${Math.round(c.monthly_fee)}</td>
           <td>${esc(c.schedule_note || "—")}</td>
           <td><div class="row-actions">
-            <button data-edit-course="${c.id}">編輯</button>
-            <button data-del-course="${c.id}">刪除</button>
+            <button data-edit-course="${c.id}">${t("btn_edit")}</button>
+            <button data-del-course="${c.id}">${t("btn_delete")}</button>
           </div></td>
         </tr>`).join("")
-      : `<tr><td colspan="4" class="muted">未有課程。</td></tr>`;
+      : `<tr><td colspan="4" class="muted">${t("no_courses")}</td></tr>`;
 }
 
 const dlgCourse = document.getElementById("dlg-course");
@@ -203,7 +214,7 @@ let editingCourse = null;
 function openCourseDialog(c) {
   editingCourse = c ? c.id : null;
   document.getElementById("dlg-course-title").textContent =
-    c ? "編輯課程" : "新增課程";
+    c ? t("dlg_course_edit") : t("dlg_course_new");
   document.getElementById("c-name").value = c ? c.name : "";
   document.getElementById("c-fee").value = c ? c.monthly_fee : "";
   document.getElementById("c-sched").value = c ? (c.schedule_note || "") : "";
@@ -225,7 +236,7 @@ document.getElementById("frm-course").addEventListener("submit", (e) => {
     schedule_note: document.getElementById("c-sched").value.trim(),
   };
   if (!data.name) {
-    alert("請輸入課程名稱。");
+    alert(t("alert_course_name"));
     return;
   }
   if (editingCourse) TDB.updateCourse(editingCourse, data);
@@ -250,40 +261,45 @@ function renderAttendance() {
   const date = document.getElementById("att-date").value;
   if (!courseId || !date) {
     document.getElementById("att-rows").innerHTML =
-      `<tr><td colspan="4" class="muted">請選擇課程及日期。</td></tr>`;
+      `<tr><td colspan="4" class="muted">${t("att_choose")}</td></tr>`;
     return;
   }
   const roster = TDB.sessionRoster(courseId, date);
-  document.getElementById("att-hint").textContent =
-    `${esc(TDB.monthLabel(date.slice(0, 7)))} ${esc(date.slice(8))}日 — 共 ${roster.length} 位學生，按一下即時儲存。`;
+  document.getElementById("att-hint").textContent = t("att_hint_tmpl")
+    .replace("{month}", TDB.monthLabel(date.slice(0, 7)))
+    .replace("{day}", String(parseInt(date.slice(8), 10)))
+    .replace("{n}", roster.length);
   document.getElementById("att-rows").innerHTML = roster.length
     ? roster.map(({ student, mark, session_id }) => `
       <tr>
         <td><strong>${esc(student.name)}</strong></td>
         <td>${esc(student.parent_name || "—")}</td>
         <td>${mark === "present"
-          ? `<span class="pill mark-present">出席</span>`
+          ? `<span class="pill mark-present">${t("mark_present")}</span>`
           : mark === "absent"
-            ? `<span class="pill mark-absent">缺席</span>`
-            : `<span class="muted">未點名</span>`}</td>
+            ? `<span class="pill mark-absent">${t("mark_absent")}</span>`
+            : `<span class="muted">${t("mark_none")}</span>`}</td>
         <td><div class="row-actions">
           <button data-mark="present" data-session="${session_id}"
             data-student="${student.id}"
-            ${mark === "present" ? "disabled" : ""}>✓ 出席</button>
+            ${mark === "present" ? "disabled" : ""}>${t("btn_present")}</button>
           <button data-mark="absent" data-session="${session_id}"
             data-student="${student.id}"
-            ${mark === "absent" ? "disabled" : ""}>✗ 缺席</button>
+            ${mark === "absent" ? "disabled" : ""}>${t("btn_absent")}</button>
         </div></td>
       </tr>`).join("")
-    : `<tr><td colspan="4" class="muted">此課程未有學生。</td></tr>`;
+    : `<tr><td colspan="4" class="muted">${t("att_no_students")}</td></tr>`;
 }
 
 document.getElementById("att-load").addEventListener("click", renderAttendance);
 
 /* ---- Mark paid dialog ----------------------------------------------------------- */
 const dlgPaid = document.getElementById("dlg-paid");
-document.getElementById("p-method").innerHTML =
-  FEE_METHODS.map((m) => `<option>${m}</option>`).join("");
+function buildMethodOptions() {
+  document.getElementById("p-method").innerHTML = FEE_METHODS.map((m) =>
+    `<option value="${esc(m)}">${esc(methodLabel(m))}</option>`).join("");
+}
+buildMethodOptions();
 
 document.getElementById("frm-paid").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -317,12 +333,12 @@ document.getElementById("r-copy").addEventListener("click", async () => {
   const text = document.getElementById("receipt-sheet").textContent;
   try {
     await navigator.clipboard.writeText(text);
-    document.getElementById("r-copy").textContent = "已複製 ✓";
+    document.getElementById("r-copy").textContent = t("btn_copied");
     setTimeout(() => {
-      document.getElementById("r-copy").textContent = "複製文字";
+      document.getElementById("r-copy").textContent = t("btn_copy");
     }, 1500);
   } catch {
-    alert("複製失敗，請手動選取文字複製。");
+    alert(t("copy_fail"));
   }
 });
 document.getElementById("r-print").addEventListener("click", () =>
@@ -337,19 +353,19 @@ function openHistory(studentId) {
   const s = TDB.getStudent(studentId);
   const h = TDB.studentHistory(studentId);
   document.getElementById("h-title").textContent =
-    `出席記錄 — ${esc(studentName(s))}`;
+    t("history_title").replace("{name}", studentName(s));
   document.getElementById("h-summary").textContent =
-    `出席 ${h.present} 次，缺席 ${h.absent} 次。`;
+    t("history_summary").replace("{p}", h.present).replace("{a}", h.absent);
   document.getElementById("h-rows").innerHTML = h.rows.length
     ? h.rows.map((r) => `
       <tr>
         <td>${esc(r.date)}</td>
         <td>${esc(r.course)}</td>
         <td>${r.mark === "present"
-          ? `<span class="pill mark-present">出席</span>`
-          : `<span class="pill mark-absent">缺席</span>`}</td>
+          ? `<span class="pill mark-present">${t("mark_present")}</span>`
+          : `<span class="pill mark-absent">${t("mark_absent")}</span>`}</td>
       </tr>`).join("")
-    : `<tr><td colspan="3" class="muted">未有點名記錄。</td></tr>`;
+    : `<tr><td colspan="3" class="muted">${t("no_history")}</td></tr>`;
   dlgHistory.showModal();
 }
 
@@ -370,7 +386,7 @@ document.addEventListener("click", (e) => {
   }
   const unpaid = e.target.closest("[data-unpaid]");
   if (unpaid) {
-    if (confirm("將此筆學費改回「未繳」？")) {
+    if (confirm(t("confirm_unpaid"))) {
       TDB.markUnpaid(unpaid.dataset.unpaid);
       renderAll();
     }
@@ -394,9 +410,9 @@ document.addEventListener("click", (e) => {
   }
   const delC = e.target.closest("[data-del-course]");
   if (delC) {
-    if (confirm("確定刪除此課程？")) {
+    if (confirm(t("confirm_del_course"))) {
       if (!TDB.deleteCourse(delC.dataset.delCourse)) {
-        alert("此課程仍有學生報讀，請先移除學生才可刪除。");
+        alert(t("alert_course_blocked"));
       }
       renderAll();
     }
@@ -409,7 +425,7 @@ document.addEventListener("click", (e) => {
   }
   const delS = e.target.closest("[data-del-student]");
   if (delS) {
-    if (confirm("確定刪除此學生？其學費及點名記錄會一併刪除。")) {
+    if (confirm(t("confirm_del_student"))) {
       TDB.deleteStudent(delS.dataset.delStudent);
       renderAll();
     }
@@ -436,7 +452,7 @@ document.getElementById("frm-settings").addEventListener("submit", (e) => {
   new FormData(e.target).forEach((v, k) => { data[k] = v; });
   TDB.saveSettings(data);
   const el = document.getElementById("settings-saved");
-  el.textContent = "已儲存 ✓";
+  el.textContent = t("saved");
   setTimeout(() => { el.textContent = ""; }, 2000);
 });
 
@@ -448,5 +464,7 @@ function renderAll() {
   renderStudents();
   renderCourses();
 }
+window.onLangChange = function () { buildMethodOptions(); };
 loadSettings();
 renderAll();
+applyI18n();
