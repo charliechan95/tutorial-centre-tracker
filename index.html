@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>補習社收費及點名</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .tabs button { border: 1px solid transparent; background: transparent; color: #d8d2c4; }
+  .tabs button.active { background: #3a322a; color: #fff; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .pill-unpaid { background: #fff3cd; color: #856404; }
+  .pill-paid { background: #d4edda; color: #155724; }
+  .mark-present { background: #d4edda; color: #155724; }
+  .mark-absent { background: #f8d7da; color: #721c24; }
+  #receipt-sheet { background: #fff; border: 1px solid var(--line);
+    border-radius: 10px; padding: 1.4rem; max-width: 420px;
+    white-space: pre-line; font-size: 1rem; line-height: 1.7; }
+  .check-line { display: block; margin: 0.3rem 0; }
+  .check-line label { display: inline-block; margin-right: 0.6rem; }
+  @media print {
+    body * { visibility: hidden !important; }
+    #receipt-sheet, #receipt-sheet * { visibility: visible !important; }
+    #receipt-sheet { position: absolute; left: 0; top: 0;
+      width: 100%; max-width: none; border: none; }
+    dialog { border: none; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">📚 收費及點名</div>
+  <nav class="tabs">
+    <button data-tab="dashboard" class="active">主頁</button>
+    <button data-tab="fees">學費</button>
+    <button data-tab="attendance">點名</button>
+    <button data-tab="students">學生</button>
+    <button data-tab="courses">課程</button>
+    <button data-tab="settings">設定</button>
+  </nav>
+</header>
+<main class="container">
+
+  <!-- Dashboard -->
+  <section id="view-dashboard" class="view active">
+    <h1>主頁 <span class="muted" id="dash-month"></span></h1>
+    <section class="cards">
+      <div class="card"><div class="card-num" id="d-students">0</div>
+        <div class="card-label">學生人數</div></div>
+      <div class="card"><div class="card-num" id="d-collected">0</div>
+        <div class="card-label">本月已收 (HKD)</div></div>
+      <div class="card"><div class="card-num" id="d-unpaid-n">0</div>
+        <div class="card-label">未繳人數</div></div>
+      <div class="card"><div class="card-num" id="d-unpaid-sum">0</div>
+        <div class="card-label">未繳總額 (HKD)</div></div>
+    </section>
+    <section>
+      <h2>⚠️ 本月未繳學費</h2>
+      <table class="tbl">
+        <thead><tr>
+          <th>學生</th><th>課程</th><th>金額</th><th></th>
+        </tr></thead>
+        <tbody id="dash-unpaid"></tbody>
+      </table>
+    </section>
+  </section>
+
+  <!-- Fees -->
+  <section id="view-fees" class="view">
+    <h1>學費記錄</h1>
+    <div class="toolbar">
+      <div class="search">
+        <input type="month" id="fee-month">
+        <input type="text" id="fee-q" placeholder="搜尋學生…">
+        <select id="fee-status">
+          <option value="">全部</option>
+          <option value="unpaid">未繳</option>
+          <option value="paid">已繳</option>
+        </select>
+        <button id="fee-apply">查詢</button>
+      </div>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>學生</th><th>課程</th><th>月份</th>
+        <th>金額</th><th>狀態</th><th></th>
+      </tr></thead>
+      <tbody id="fee-rows"></tbody>
+    </table>
+  </section>
+
+  <!-- Attendance -->
+  <section id="view-attendance" class="view">
+    <h1>點名</h1>
+    <div class="toolbar">
+      <div class="search">
+        <select id="att-course"></select>
+        <input type="date" id="att-date">
+        <button id="att-load">載入名單</button>
+      </div>
+    </div>
+    <p class="muted" id="att-hint">選擇課程及日期，按學生逐一點名（即時儲存）。</p>
+    <table class="tbl">
+      <thead><tr>
+        <th>學生</th><th>家長</th><th>狀態</th><th></th>
+      </tr></thead>
+      <tbody id="att-rows"></tbody>
+    </table>
+  </section>
+
+  <!-- Students -->
+  <section id="view-students" class="view">
+    <h1>學生</h1>
+    <div class="toolbar">
+      <button id="btn-new-student" class="primary">+ 新增學生</button>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>學生</th><th>家長 / 電話</th><th>報讀課程</th><th></th>
+      </tr></thead>
+      <tbody id="student-rows"></tbody>
+    </table>
+  </section>
+
+  <!-- Courses -->
+  <section id="view-courses" class="view">
+    <h1>課程</h1>
+    <div class="toolbar">
+      <button id="btn-new-course" class="primary">+ 新增課程</button>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>課程</th><th>月費</th><th>上課時間</th><th></th>
+      </tr></thead>
+      <tbody id="course-rows"></tbody>
+    </table>
+  </section>
+
+  <!-- Settings -->
+  <section id="view-settings" class="view">
+    <h1>中心設定</h1>
+    <p class="muted">FPS 資料會自動加入 WhatsApp 訊息。</p>
+    <form id="frm-settings">
+      <label>中心名稱 <input name="centre_name" id="s-centre"></label>
+      <label>FPS ID（電話 / 電郵 / 轉數快代號）
+        <input name="fps_id" id="s-fps-id" placeholder="例如 91234567"></label>
+      <label>FPS 戶口名稱 <input name="fps_name" id="s-fps-name"
+             placeholder="例如 Chan Tai Man"></label>
+      <label>中心電話 <input name="phone" id="s-phone"></label>
+      <label>學費提醒訊息
+        <textarea name="fee_reminder_message" id="s-msg" rows="4"></textarea>
+        <div class="muted">可用：{parent} {student} {course} {month}
+          {amount} {centre} {fps_id} {fps_name} {phone}</div>
+      </label>
+      <button type="submit" class="primary">儲存設定</button>
+      <span id="settings-saved" class="muted"></span>
+    </form>
+  </section>
+
+</main>
+
+<!-- Course dialog -->
+<dialog id="dlg-course">
+  <form method="dialog" id="frm-course">
+    <h2 id="dlg-course-title">新增課程</h2>
+    <label>課程名稱 <input name="name" id="c-name" required></label>
+    <label>月費 (HKD) <input name="monthly_fee" id="c-fee" type="number"
+      step="1" min="0"></label>
+    <label>上課時間 <input name="schedule_note" id="c-sched"
+      placeholder="例如 逢星期六 10:00"></label>
+    <div class="dlg-actions">
+      <button value="cancel" formnovalidate>取消</button>
+      <button id="c-save" value="default" class="primary">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Student dialog -->
+<dialog id="dlg-student">
+  <form method="dialog" id="frm-student">
+    <h2 id="dlg-student-title">新增學生</h2>
+    <label>學生姓名 <input name="name" id="st-name" required></label>
+    <label>家長姓名 <input name="parent_name" id="st-parent"></label>
+    <label>電話 / WhatsApp <input name="phone" id="st-phone"
+      placeholder="例如 91234567"></label>
+    <div>報讀課程：</div>
+    <div id="st-courses"></div>
+    <div class="dlg-actions">
+      <button value="cancel" formnovalidate>取消</button>
+      <button id="st-save" value="default" class="primary">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Mark paid dialog -->
+<dialog id="dlg-paid">
+  <form method="dialog" id="frm-paid">
+    <h2>標為已繳</h2>
+    <input type="hidden" id="p-feeid">
+    <div class="muted" id="p-desc"></div>
+    <label>繳費日期 <input type="date" id="p-date"></label>
+    <label>付款方式
+      <select id="p-method"></select>
+    </label>
+    <div class="dlg-actions">
+      <button value="cancel" formnovalidate>取消</button>
+      <button id="p-save" value="default" class="primary">確認</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Receipt dialog -->
+<dialog id="dlg-receipt">
+  <h2>收據</h2>
+  <div id="receipt-sheet"></div>
+  <div class="dlg-actions">
+    <button id="r-close">關閉</button>
+    <button id="r-copy">複製文字</button>
+    <button id="r-print">列印</button>
+    <a id="r-wa" href="#" target="_blank" rel="noopener">
+      <button type="button" class="primary">WhatsApp 傳送</button>
+    </a>
+  </div>
+</dialog>
+
+<!-- Attendance history dialog -->
+<dialog id="dlg-history">
+  <h2 id="h-title">出席記錄</h2>
+  <p class="muted" id="h-summary"></p>
+  <table class="tbl">
+    <thead><tr><th>日期</th><th>課程</th><th>狀態</th></tr></thead>
+    <tbody id="h-rows"></tbody>
+  </table>
+  <div class="dlg-actions">
+    <button id="h-close">關閉</button>
+  </div>
+</dialog>
+
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
