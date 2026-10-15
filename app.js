@@ -93,7 +93,7 @@ function feeRow(f) {
       <td>${esc(courseName(c))}</td>
       <td>${esc(TDB.monthLabel(f.month))}</td>
       <td>HK$${Math.round(f.amount)}</td>
-      <td><span class="pill pill-${f.status}">${FEE_PILL[f.status] || f.status}</span>
+      <td><span class="pill pill-${f.status}">${feePill(f.status)}</span>
         ${f.status === "paid" && f.method ? `<div class="muted">${esc(methodLabel(f.method))} ${esc(f.paid_date || "")}</div>` : ""}</td>
       <td><div class="row-actions">${actions}</div></td>
     </tr>`;
