@@ -166,6 +166,14 @@
       <button type="submit" class="primary" data-i18n="btn_save_settings">儲存設定</button>
       <span id="settings-saved" class="muted"></span>
     </form>
+    <h2 data-i18n="settings_backup_title">備份及還原</h2>
+    <p class="muted" data-i18n="settings_backup_note">將全部資料匯出為 JSON 檔案；匯入會覆寫現有全部資料。</p>
+    <div class="row-actions">
+      <button id="btn-export" data-i18n="btn_export">⬇ 匯出備份</button>
+      <button id="btn-import" data-i18n="btn_import">⬆ 匯入還原</button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+    </div>
+    <p><span id="backup-status" class="muted"></span></p>
   </section>
 
 </main>
@@ -216,6 +224,20 @@
     <div class="dlg-actions">
       <button value="cancel" formnovalidate data-i18n="btn_cancel">取消</button>
       <button id="p-save" value="default" class="primary" data-i18n="btn_confirm">確認</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Fee edit dialog -->
+<dialog id="dlg-fee">
+  <form method="dialog" id="frm-fee">
+    <h2 id="dlg-fee-title" data-i18n="dlg_fee_edit">編輯學費</h2>
+    <div class="muted" id="f-desc"></div>
+    <label><span data-i18n="lbl_fee_amount">金額 (HKD)</span> <input name="amount" id="f-amount" type="number"
+      step="1" min="0"></label>
+    <div class="dlg-actions">
+      <button value="cancel" formnovalidate data-i18n="btn_cancel">取消</button>
+      <button id="f-save" value="default" class="primary" data-i18n="btn_save">儲存</button>
     </div>
   </form>
 </dialog>

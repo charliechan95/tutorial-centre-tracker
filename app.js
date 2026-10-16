@@ -81,11 +81,15 @@ function feeRow(f) {
   const link = TDB.feeReminderLink(f.id);
   const actions = f.status === "paid"
     ? `<button data-receipt="${f.id}">${t("btn_receipt")}</button>
-       <button data-unpaid="${f.id}">${t("btn_set_unpaid")}</button>`
+       <button data-edit-fee="${f.id}">${t("btn_edit")}</button>
+       <button data-unpaid="${f.id}">${t("btn_set_unpaid")}</button>
+       <button data-del-fee="${f.id}">${t("btn_delete")}</button>`
     : `${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">
          <button type="button">${t("btn_wa_remind")}</button></a>`
          : `<span class="muted">${t("no_phone")}</span>`}
-       <button data-paid="${f.id}">${t("btn_mark_paid")}</button>`;
+       <button data-paid="${f.id}">${t("btn_mark_paid")}</button>
+       <button data-edit-fee="${f.id}">${t("btn_edit")}</button>
+       <button data-del-fee="${f.id}">${t("btn_delete")}</button>`;
   return `
     <tr>
       <td><strong>${esc(studentName(s))}</strong>
@@ -315,6 +319,39 @@ document.getElementById("frm-paid").addEventListener("submit", (e) => {
   renderAll();
 });
 
+/* ---- Fee edit dialog --------------------------------------------------------------- */
+const dlgFee = document.getElementById("dlg-fee");
+let editingFee = null;
+
+function openFeeDialog(f) {
+  if (!f) return;
+  editingFee = f.id;
+  const s = TDB.getStudent(f.student_id);
+  const c = TDB.getCourse(f.course_id);
+  document.getElementById("dlg-fee-title").textContent = t("dlg_fee_edit");
+  document.getElementById("f-desc").textContent =
+    `${studentName(s)} — ${courseName(c)} — ${TDB.monthLabel(f.month)}`;
+  document.getElementById("f-amount").value = f.amount;
+  dlgFee.showModal();
+}
+
+document.getElementById("frm-fee").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (e.submitter && e.submitter.value === "cancel") {
+    dlgFee.close();
+    return;
+  }
+  const raw = document.getElementById("f-amount").value;
+  const amount = parseFloat(raw);
+  if (raw === "" || isNaN(amount) || amount < 0) {
+    alert(t("alert_fee_amount"));
+    return;
+  }
+  TDB.updateFee(editingFee, { amount });
+  dlgFee.close();
+  renderAll();
+});
+
 /* ---- Receipt dialog --------------------------------------------------------------- */
 const dlgReceipt = document.getElementById("dlg-receipt");
 
@@ -392,6 +429,21 @@ document.addEventListener("click", (e) => {
     }
     return;
   }
+  const editF = e.target.closest("[data-edit-fee]");
+  if (editF) {
+    openFeeDialog(TDB.getFee(editF.dataset.editFee));
+    return;
+  }
+  const delF = e.target.closest("[data-del-fee]");
+  if (delF) {
+    if (confirm(t("confirm_del_fee"))) {
+      if (!TDB.deleteFee(delF.dataset.delFee)) {
+        alert(t("alert_fee_blocked"));
+      }
+      renderAll();
+    }
+    return;
+  }
   const receipt = e.target.closest("[data-receipt]");
   if (receipt) {
     openReceipt(receipt.dataset.receipt);
@@ -454,6 +506,53 @@ document.getElementById("frm-settings").addEventListener("submit", (e) => {
   const el = document.getElementById("settings-saved");
   el.textContent = t("saved");
   setTimeout(() => { el.textContent = ""; }, 2000);
+});
+
+/* ---- Backup export / import ---------------------------------------------------------- */
+function backupStatus(msg) {
+  const el = document.getElementById("backup-status");
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = ""; }, 2000);
+}
+
+document.getElementById("btn-export").addEventListener("click", () => {
+  const payload = TDB.exportAll();
+  const blob = new Blob([JSON.stringify(payload, null, 2)],
+    { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tutorial-centre-backup-" + TDB.today() + ".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  backupStatus(t("export_done"));
+});
+
+document.getElementById("btn-import").addEventListener("click", () =>
+  document.getElementById("import-file").click());
+
+document.getElementById("import-file").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let payload = null;
+    try { payload = JSON.parse(reader.result); }
+    catch { /* falls through to the invalid-file alert */ }
+    if (!payload || !TDB._validBackup(payload)) {
+      alert(t("alert_import_invalid"));
+      return;
+    }
+    if (!confirm(t("confirm_import"))) return;
+    TDB.importAll(payload);
+    loadSettings();
+    renderAll();
+    backupStatus(t("import_done"));
+  };
+  reader.readAsText(file);
 });
 
 /* ---- Boot ---------------------------------------------------------------------------- */

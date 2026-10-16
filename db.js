@@ -37,11 +37,33 @@ const TDB = {
     }
   },
   _write(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+    this._safeSet(key, JSON.stringify(value));
+  },
+  /** Guarded write: never throws; surfaces a visible error if storage fails. */
+  _safeSet(key, raw) {
+    try {
+      localStorage.setItem(key, raw);
+      return true;
+    } catch (err) {
+      this._notifyWriteError(key, err);
+      return false;
+    }
+  },
+  _notifyWriteError(key, err) {
+    if (typeof console !== "undefined" && console.error) {
+      console.error("tct: storage write failed for " + key, err);
+    }
+    const msg = (typeof t === "function")
+      ? t("alert_storage_fail")
+      : "Storage write failed — your changes were not saved.";
+    if (typeof alert === "function") alert(msg);
   },
   _nextSeq(name) {
-    const n = (parseInt(localStorage.getItem(name) || "0", 10) || 0) + 1;
-    localStorage.setItem(name, String(n));
+    let n = 0;
+    try { n = parseInt(localStorage.getItem(name) || "0", 10) || 0; }
+    catch { /* unreadable storage: keep counting from 0 */ }
+    n += 1;
+    this._safeSet(name, String(n));
     return n;
   },
   _nextId() {
@@ -242,6 +264,34 @@ const TDB = {
     this._write("tct_fees", list);
     return true;
   },
+  /** Correct a fee's amount (e.g. course fee changed after auto-creation). */
+  updateFee(id, data) {
+    const list = this._read("tct_fees", []);
+    const f = list.find((x) => String(x.id) === String(id));
+    if (!f) return false;
+    if ("amount" in data) f.amount = parseFloat(data.amount) || 0;
+    this._write("tct_fees", list);
+    return true;
+  },
+  /**
+   * Delete one fee record. Blocked (returns false) while the student is
+   * still enrolled in the course — ensureFees would recreate the row, so
+   * the delete could never stick (and a paid fee would come back unpaid).
+   * Unenrol the student first for a durable delete. A fee is otherwise a
+   * leaf record (receipts render from it), so no cascade is needed.
+   */
+  deleteFee(id) {
+    const f = this.getFee(id);
+    if (!f) return false;
+    const s = this.getStudent(f.student_id);
+    const enrolled = !!s && (s.course_ids || [])
+      .map(String).includes(String(f.course_id));
+    if (enrolled) return false;
+    const fid = String(id);
+    this._write("tct_fees",
+      this._read("tct_fees", []).filter((x) => String(x.id) !== fid));
+    return true;
+  },
   unpaidFees(month) {
     return this.fees(month, { status: "unpaid" });
   },
@@ -317,6 +367,79 @@ const TDB = {
       "付款方式：" + r.method,
       "多謝惠顧！",
     ].join("\n");
+  },
+
+  // ---- Backup (export / import) --------------------------------------------------
+  /** Full snapshot of every data key plus the id/receipt sequence counters. */
+  exportAll() {
+    const seq = (name) => {
+      try { return parseInt(localStorage.getItem(name) || "0", 10) || 0; }
+      catch { return 0; }
+    };
+    return {
+      app: "tutorial-centre-tracker",
+      version: 1,
+      exported_at: new Date().toISOString(),
+      data: {
+        tct_settings: this._read("tct_settings", {}),
+        tct_courses: this.courses(),
+        tct_students: this.students(),
+        tct_fees: this._read("tct_fees", []),
+        tct_sessions: this._read("tct_sessions", []),
+        tct_marks: this._read("tct_marks", []),
+      },
+      seq: {
+        tct_seq: seq("tct_seq"),
+        tct_receipt_seq: seq("tct_receipt_seq"),
+      },
+    };
+  },
+  /** Validate the whole payload shape; never throws. */
+  _validBackup(p) {
+    if (!p || typeof p !== "object" || Array.isArray(p)) return false;
+    const d = p.data;
+    if (!d || typeof d !== "object" || Array.isArray(d)) return false;
+    const req = ["tct_settings", "tct_courses", "tct_students",
+      "tct_fees", "tct_sessions", "tct_marks"];
+    for (const k of req) if (!(k in d)) return false;
+    if (!d.tct_settings || typeof d.tct_settings !== "object" ||
+        Array.isArray(d.tct_settings)) return false;
+    for (const k of req.slice(1)) if (!Array.isArray(d[k])) return false;
+    const hasId = (rows) => rows.every((r) =>
+      r && typeof r === "object" && !Array.isArray(r) && "id" in r);
+    if (!hasId(d.tct_courses) || !hasId(d.tct_students) ||
+        !hasId(d.tct_fees)) return false;
+    for (const f of d.tct_fees) {
+      if (!("student_id" in f) || !("course_id" in f) || !("month" in f)) {
+        return false;
+      }
+    }
+    if (p.seq !== undefined &&
+        (!p.seq || typeof p.seq !== "object" || Array.isArray(p.seq))) {
+      return false;
+    }
+    return true;
+  },
+  /**
+   * Restore a payload produced by exportAll(). Validates the whole payload
+   * first — writes nothing unless it is valid. Returns true on success.
+   */
+  importAll(payload) {
+    if (!this._validBackup(payload)) return false;
+    const d = payload.data;
+    this._write("tct_settings", d.tct_settings);
+    this._write("tct_courses", d.tct_courses);
+    this._write("tct_students", d.tct_students);
+    this._write("tct_fees", d.tct_fees);
+    this._write("tct_sessions", d.tct_sessions);
+    this._write("tct_marks", d.tct_marks);
+    if (payload.seq) {
+      for (const name of ["tct_seq", "tct_receipt_seq"]) {
+        const n = parseInt(payload.seq[name], 10);
+        if (Number.isInteger(n) && n >= 0) this._safeSet(name, String(n));
+      }
+    }
+    return true;
   },
 
   // ---- WhatsApp ------------------------------------------------------------------
